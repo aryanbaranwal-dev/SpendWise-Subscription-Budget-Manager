@@ -1,57 +1,62 @@
 # SpendWise - Subscription & Budget Manager
 
-Java web application (JSP + Jakarta Servlets + JDBC + Oracle) for tracking expenses, recurring
-subscriptions and a monthly budget. Built for Apache Tomcat 10.1 (`jakarta.servlet.*`).
+A Java web application built with JSP, Jakarta Servlets, JDBC, and Oracle Database for tracking expenses, recurring subscriptions, and monthly budgets. It is designed for **Apache Tomcat 10.1** and uses the `jakarta.servlet.*` APIs.
 
-**Stack:** Java 11+ (JDK 17 or 21 recommended), Jakarta Servlet 6.0 / JSP 3.1, JSTL 3.0,
-JDBC with `ojdbc11`, Oracle Database, HTML/CSS/vanilla JS, Maven WAR, Tomcat 10.1, Eclipse.
+**Technology stack:** Java 11+ (JDK 17 or 21 recommended), Jakarta Servlet 6.0 / JSP 3.1, JSTL 3.0, JDBC (`ojdbc11`), Oracle Database, HTML, CSS, vanilla JavaScript, Maven WAR, Tomcat 10.1, and Eclipse IDE.
 
 ---
 
 ## 1. Prerequisites
 
-| Need | Check |
+| Requirement | How to check |
 |---|---|
 | JDK 11 or newer (a JDK, not just a JRE) | `javac -version` |
-| Eclipse IDE for **Enterprise Java and Web Developers**, 2023-03 or newer | Help > About |
-| Apache Tomcat **10.1.x** (zip, extracted to a folder without spaces) | `<tomcat>/bin/version.bat` |
-| Oracle Database running, with its listener | `lsnrctl status` |
-| Internet on first build (Maven downloads libraries) | |
+| Eclipse IDE for Enterprise Java and Web Developers, version 2023-03 or newer | **Help > About** |
+| Apache Tomcat 10.1.x | Run `<tomcat>/bin/version.bat` |
+| Oracle Database running, with its listener | Run `lsnrctl status` |
+| Internet access for the first Maven build | Maven downloads dependencies on the first build |
 
-Tomcat 9 or older will NOT work: it uses `javax.*`, this project uses `jakarta.*`.
+> **Compatibility:** Tomcat 9 or older will not work without code changes because this project uses `jakarta.*` APIs rather than `javax.*`.
 
-## 2. Oracle setup
+## 2. Oracle database setup
 
 ### 2.1 Find your connection details
-Connect with SQL Developer or SQL*Plus as any user and run:
+
+Connect with SQL Developer or SQL*Plus and run:
+
 ```sql
 SELECT banner FROM v$version;
-SELECT sys_context('USERENV','SERVICE_NAME') FROM dual;
+SELECT sys_context('USERENV', 'SERVICE_NAME') FROM dual;
 ```
-The second query gives the **service name** (for XE 18c/21c it is usually `XEPDB1`). Host is
-usually `localhost`, port `1521`. `lsnrctl status` lists services too.
 
-### 2.2 Application user
-Use a dedicated user, not SYS or SYSTEM. If you already have one, skip this. Otherwise, connected as a
-DBA **to the same service name** (for example `XEPDB1`), run, choosing your own username and password:
+The second query returns the service name. For Oracle XE 18c/21c, it is commonly `XEPDB1`. The host is usually `localhost`, and the listener port is usually `1521`. Confirm your actual settings rather than assuming these values.
+
+### 2.2 Create a dedicated application user
+
+Use a dedicated application user rather than `SYS` or `SYSTEM`. If you already have a suitable user, skip this step. Otherwise, connect as a DBA to the **same service** that the application will use and run the following with your own username and a strong password:
+
 ```sql
 CREATE USER your_user IDENTIFIED BY "choose_a_strong_password";
 GRANT CREATE SESSION, CREATE TABLE, CREATE SEQUENCE TO your_user;
 ALTER USER your_user QUOTA UNLIMITED ON USERS;
 ```
-(If your database has no `USERS` tablespace, replace it with your default tablespace.)
+
+If your database does not have a `USERS` tablespace, replace it with the appropriate default tablespace.
 
 ### 2.3 Create the tables
-Connect **as that application user** and run `sql/schema.sql`:
-* **SQL Developer:** open the file, choose your connection, press **F5** (Run Script).
-* **SQL*Plus:** `sqlplus your_user@//localhost:1521/YOUR_SERVICE` then `@sql/schema.sql`
 
-Expect 4 sequences and 4 tables created, with no errors. To start over later, run `sql/drop_schema.sql`.
+Connect as the application user and run `sql/schema.sql`.
 
-## 3. Database configuration (where your credentials go)
+- **SQL Developer:** Open `sql/schema.sql`, select the correct connection, and press **F5** (Run Script).
+- **SQL*Plus:** Run `sqlplus your_user@//localhost:1521/YOUR_SERVICE`, then execute `@sql/schema.sql`.
 
-1. In `src/main/resources/` copy `db.properties.template` to **`db.properties`**.
-2. Edit `db.properties`:
+The schema script is expected to create four sequences and four tables. Check the output for errors. To reset the application's schema later, use `sql/drop_schema.sql` only when you intentionally want to drop the project's objects and their data.
+
+## 3. Database configuration
+
+1. In `src/main/resources/`, copy `db.properties.template` to a new file named `db.properties`.
+2. Edit `db.properties` with your own connection details:
+
 ```properties
 db.host=localhost
 db.port=1521
@@ -59,135 +64,162 @@ db.service=YOUR_SERVICE_NAME
 db.username=YOUR_DB_USERNAME
 db.password=YOUR_DB_PASSWORD
 ```
-`db.properties` is in `.gitignore` and is intentionally excluded from this source package. Never commit or share it.
-For a SID-style connection set `db.url=jdbc:oracle:thin:@localhost:1521:XE` instead.
 
-Optional: keep the file outside the project and point to it with a Tomcat VM argument
-`-Dspendwise.config=C:/secure/spendwise-db.properties` (Eclipse: Servers > double-click server >
-Open launch configuration > Arguments > VM arguments) or the environment variable `SPENDWISE_CONFIG`.
+Replace all placeholder values with the correct values for your environment.
 
-## 4. Import into Eclipse
+**Security:** `db.properties` is listed in `.gitignore` and must not be committed or shared. The repository should contain only `db.properties.template`, with placeholder values. Never put a real database password in README files, screenshots, commits, or a public repository.
 
-1. Extract the ZIP to a folder **without spaces** (for example `C:\projects\spendwise`).
-2. Eclipse: **File > Import > Maven > Existing Maven Projects** > Next > Browse to the extracted
-   `spendwise` folder > tick `pom.xml` > Finish. Wait for "Building workspace" / Maven downloads to finish
-   (bottom-right progress bar).
-3. Right-click the project > **Maven > Update Project** (Alt+F5) > tick *Force Update* > OK.
-4. Register Tomcat (once): **Window > Preferences > Server > Runtime Environments > Add >
-   Apache Tomcat v10.1** > point to your Tomcat folder and choose your JDK.
-5. Right-click project > **Properties > Project Facets** and confirm: *Dynamic Web Module = 6.0*,
-   *Java = 11 or higher*. Under **Targeted Runtimes** tick *Apache Tomcat v10.1*.
-6. If you see red errors in the Problems view for this project, see Troubleshooting below.
+For a SID-style connection, configure `db.url` as appropriate for your Oracle installation, for example:
+
+```properties
+db.url=jdbc:oracle:thin:@localhost:1521:XE
+```
+
+Alternatively, keep the configuration file outside the project and set the JVM system property `-Dspendwise.config=C:/secure/spendwise-db.properties` or the environment variable `SPENDWISE_CONFIG`. In Eclipse, JVM arguments can be configured through the server launch configuration.
+
+## 4. Import the project into Eclipse
+
+1. Extract the project ZIP to a folder path without spaces, for example `C:\Projects\spendwise`.
+2. In Eclipse, select **File > Import > Maven > Existing Maven Projects** and click **Next**.
+3. Browse to the extracted project folder, select `pom.xml`, and click **Finish**.
+4. Wait for workspace building and Maven dependency downloads to finish.
+5. Right-click the project and choose **Maven > Update Project** (usually `Alt+F5`). If needed, select **Force Update**, then click **OK**.
+6. Register Tomcat if it is not already configured: **Window > Preferences > Server > Runtime Environments > Add > Apache Tomcat v10.1**. Select the Tomcat installation folder and an appropriate JDK.
+7. Under the project’s **Properties > Project Facets**, confirm Dynamic Web Module 6.0 and Java 11 or newer. Under **Targeted Runtimes**, select Tomcat 10.1.
+8. If Eclipse reports errors, see the troubleshooting section below.
 
 ## 5. Configure and start Tomcat in Eclipse
 
-1. **Window > Show View > Servers** > "No servers are available. Click this link to create a new server".
-2. Choose **Apache > Tomcat v10.1 Server** > Next > add **spendwise** to *Configured* > Finish.
-3. Double-click the server. **If Oracle XE is installed, port 8080 is often already used by it:** set
-   *HTTP/1.1* port to **8081**. Save (Ctrl+S).
-4. Right-click the server > **Start** (or right-click project > **Run As > Run on Server**).
-5. Wait for `Server startup in [...] milliseconds` in the Console, with no red stack trace.
+1. Open **Window > Show View > Servers**.
+2. Create an **Apache Tomcat v10.1 Server** if one is not already configured, and add the `spendwise` project to the configured resources.
+3. Double-click the server. If port `8080` is already in use, choose an available port such as `8081`, then save the server configuration.
+4. Right-click the server and select **Start**, or run the project using **Run As > Run on Server**.
+5. Wait for the server startup message in the Console and check for errors.
 
-## 6. First run: check, register, demonstrate
+## 6. First run and demo checklist
 
-1. Open **http://localhost:8080/spendwise/health** (use 8081 if you changed it). You should see
-   `Database connection: OK` and `Schema check: OK`. If not, fix that first (Troubleshooting).
-2. Open **http://localhost:8080/spendwise/** and click *Create an account*, then sign in.
-3. Suggested demo (numbers are easy to verify):
-   * **Budget:** Budget page > set the current month to `20000`.
-   * **Expenses:** add `5000` (Rent), `2500.50` (Food).
-   * **Subscriptions:** `Netflix` 199 Monthly, `Cloud storage` 1200 Yearly, `Newspaper` 10 Weekly.
-   * **Dashboard:** Expenses `7,500.50`, Remaining `12,499.50`, Used `37.5%`,
-     Subscriptions per month `342.33`; the dashboard counts active subscriptions at their monthly-equivalent cost as part of committed budget usage.
-4. Show security: sign out, then try `/dashboard` (redirects to login); register a second user and
-   confirm they see none of the first user's data.
+1. Open `http://localhost:8081/spendwise/health` if your Tomcat HTTP port is `8081`; otherwise replace `8081` with your configured port. A successful health check should report `Database connection: OK` and `Schema check: OK`.
+2. Open `http://localhost:8081/spendwise/` (adjust the port if needed), create an account, and sign in.
+3. Use the following sample values to demonstrate the main features:
+
+   - **Monthly budget:** `20000`
+   - **Expenses:** `5000` (Rent) and `2500.50` (Food)
+   - **Subscriptions:** `199` monthly (Netflix), `1200` yearly (Cloud storage), and `10` weekly (Newspaper)
+
+   The monthly-equivalent subscription estimate is approximately **₹342.33**:
+   - Monthly: ₹199.00
+   - Yearly: ₹1,200 / 12 = ₹100.00
+   - Weekly: ₹10 × 52 / 12 ≈ ₹43.33
+
+   Total recorded expenses are **₹7,500.50**. If the dashboard includes active subscriptions in committed budget usage, total committed usage is approximately **₹7,842.83**, and the remaining budget is approximately **₹12,157.17**. Utilization is approximately **39.21%** of the ₹20,000 budget.
+
+4. Demonstrate account-level data isolation by signing out, signing in as a second user, and confirming that the second user cannot see the first user's records.
+
+> Demo results depend on the application's current implementation and the records entered. Verify the displayed values locally before presenting them.
 
 ## 7. Build a WAR without Eclipse (optional)
 
-```
+If Maven is installed and available on your PATH, run this command from the project root:
+
+```bash
 mvn clean package
 ```
-Copy `target/spendwise.war` to `<tomcat>/webapps/`, start `<tomcat>/bin/startup.bat`, open
-`http://localhost:8080/spendwise/`. (`db.properties` must exist in `src/main/resources` before building,
-or use the `-Dspendwise.config` option above.)
+
+The WAR should be generated at `target/spendwise.war` if the build succeeds. You can deploy it to `<tomcat>/webapps/` and start Tomcat using `<tomcat>/bin/startup.bat`. Ensure database configuration is available to the application before running it.
 
 ## 8. Troubleshooting
 
-| Symptom | Cause and fix |
+| Symptom | Possible cause and suggested fix |
 |---|---|
-| Red errors on `.jsp` files such as "superclass ... not found" or "HttpServlet cannot be resolved" | Project not tied to Tomcat 10.1. Properties > Targeted Runtimes > tick Tomcat v10.1; Maven > Update Project; Project > Clean. |
-| Tomcat will not start: "port 8080 already in use" | Oracle XE uses 8080. Change the server HTTP port to 8081. |
-| `/health` says `db.properties not found` | You did not copy the template. See section 3. Then Project > Clean and restart the server. |
-| `/health` says `please set a real value for ...` | A `YOUR_...` placeholder is still in `db.properties`. |
-| `ORA-12514` / `ORA-12505` | Wrong service name. Re-run the query in 2.1, or use `db.url` with a SID. |
-| `ORA-01017` | Wrong username or password. |
-| `ORA-28000` | Account locked: `ALTER USER your_user ACCOUNT UNLOCK;` as DBA. |
-| `ORA-01950` | No quota: `ALTER USER your_user QUOTA UNLIMITED ON USERS;` |
-| `ORA-00942` table or view does not exist | `schema.sql` was not run as this same user. |
-| `ORA-00955` while running schema | Objects already exist. Use `sql/drop_schema.sql` first, or skip. |
-| Listener errors / "Connection refused" | Start the Oracle services (`OracleService...` and `...TNSListener`). |
-| `ClassNotFoundException: oracle.jdbc.OracleDriver` / "driver is not deployed" | Maven > Update Project; Server > Clean; check Deployment Assembly shows Maven Dependencies mapped to `WEB-INF/lib`. |
-| Oracle 11g or 12.1 and the driver refuses to connect | In `pom.xml` replace `ojdbc11` 23.5.0.24.07 with `com.oracle.database.jdbc:ojdbc8:19.25.0.0` (needs JDK 8+). |
-| "The absolute uri: jakarta.tags.core cannot be resolved" | JSTL jars missing from `WEB-INF/lib`: Maven > Update Project, then Server > Clean. |
-| 404 for every page | Wrong context path. The URL must start with `/spendwise/`. Check Modules tab of the server. |
-| `UnsupportedClassVersionError` | The JDK running Tomcat is older than the compile level. Choose a JDK 11+ for the server runtime. |
-| Old code still runs after editing | Server > Clean, Project > Clean, then restart. |
-| "Request blocked ... session expired" (403) | The form's security token no longer matches (session expired or cookies disabled). Reload the page and retry. |
-| Eclipse shows yellow warnings in `common/*.jspf` such as "Unknown tag (c:...)" | Harmless. Those fragments are included into pages that declare the taglibs; Tomcat compiles them correctly. |
-| ₹ shows as garbage | Make sure files are UTF-8 (Window > Preferences > General > Workspace > Text file encoding: UTF-8). |
+| Red errors on JSP files, such as “HttpServlet cannot be resolved” | Check that the project targets Tomcat 10.1, run **Maven > Update Project**, then **Project > Clean**. |
+| Tomcat will not start because port 8080 is in use | Configure the server to use another available HTTP port, such as 8081. |
+| `/health` reports `db.properties not found` | Copy `db.properties.template` to `db.properties`, configure it, then clean/restart the project. |
+| `/health` reports a placeholder value | Replace all `YOUR_...` values in `db.properties` with real local configuration values. |
+| `ORA-12514` or `ORA-12505` | Check the Oracle service name. Re-run the service-name query in Section 2.1. |
+| `ORA-01017` | Check the database username and password. |
+| `ORA-28000` | The account may be locked. Unlock it as a DBA if appropriate. |
+| `ORA-01950` | The user may lack tablespace quota. Configure the appropriate quota as a DBA. |
+| `ORA-00942` | Check that `sql/schema.sql` was run successfully as the same user configured in `db.properties`. |
+| `ORA-00955` while running the schema script | An object may already exist. Inspect the schema; use `sql/drop_schema.sql` only if you intend to reset the project's data. |
+| Connection refused or listener errors | Start/check the Oracle database and listener services. |
+| `ClassNotFoundException: oracle.jdbc.OracleDriver` | Update Maven dependencies and check that Maven Dependencies are included in the web application's deployment assembly. |
+| `jakarta.tags.core` cannot be resolved | Update Maven dependencies and clean/redeploy the server. |
+| Every page returns 404 | Check the deployed context path and ensure it is `/spendwise/`. |
+| `UnsupportedClassVersionError` | Tomcat may be running on an older JDK than the one used to compile the project. |
+| Old code appears after edits | Clean the project and server, then restart/redeploy. |
+| A POST form returns 403 after the session expires | Reload the page and retry; the form's CSRF token may no longer match the session. |
+| Yellow tag warnings appear in shared `.jspf` fragments | These may be Eclipse validation warnings. Confirm the JSPs compile and run correctly on Tomcat. |
+| The rupee symbol appears incorrectly | Ensure source files are UTF-8; in Eclipse, check **Window > Preferences > General > Workspace > Text file encoding**. |
 
 ## 9. Project structure
 
-```
+```text
 spendwise/
-  pom.xml                      Maven WAR configuration
-  sql/schema.sql               tables, sequences, constraints, indexes
-  sql/drop_schema.sql          deletes everything (reset)
-  src/main/java/com/spendwise/
-    controller/                Servlets (Login, Register, Logout, Dashboard, Expense,
-                               Subscription, Budget, Health) + BaseServlet
-    filter/                    EncodingFilter, CsrfFilter, AuthFilter
-    model/                     User, Expense, Subscription, Budget, DashboardSummary, enums
-    dao/                       UserDao, ExpenseDao, SubscriptionDao, BudgetDao (all SQL/JDBC)
-    service/                   AuthService, ExpenseService, SubscriptionService,
-                               BudgetService, DashboardService (rules and calculations)
-    util/                      DBUtil, PasswordUtil, ValidationUtil, Flash, Categories, ...
-  src/main/resources/db.properties.template
-  src/main/webapp/
-    index.jsp, css/style.css, js/app.js
-    WEB-INF/web.xml
-    WEB-INF/views/*.jsp        pages (not directly reachable from the browser)
-    WEB-INF/views/common/*.jspf  shared header/footer fragments
-  README.md  TESTING.md  PROJECT_EXPLANATION.md  .gitignore
+├── pom.xml
+├── sql/
+│   ├── schema.sql
+│   └── drop_schema.sql
+├── src/main/java/com/spendwise/
+│   ├── controller/   # Servlets: authentication, dashboard, expenses, subscriptions, budget, health
+│   ├── filter/       # Encoding, CSRF, and authentication filters
+│   ├── model/        # User, Expense, Subscription, Budget, DashboardSummary, enums
+│   ├── dao/          # JDBC/SQL data-access classes
+│   ├── service/      # Business rules and calculations
+│   └── util/         # Database, password, validation, flash-message utilities
+├── src/main/resources/
+│   └── db.properties.template
+├── src/main/webapp/
+│   ├── index.jsp
+│   ├── css/style.css
+│   ├── js/app.js
+│   └── WEB-INF/
+│       ├── web.xml
+│       └── views/    # JSP pages and shared fragments
+├── .gitignore
+├── README.md
+├── TESTING.md
+└── PROJECT_EXPLANATION.md
 ```
 
 ## 10. Implemented features
 
-* Registration, login, logout; PBKDF2-HMAC-SHA256 salted password hashing; session login;
-  session id renewed on login; protected pages; CSRF token on every POST.
-* Expenses: add, list, edit, delete; month and category filters; server-side validation.
-* Subscriptions: add, list, edit, delete; weekly/monthly/yearly; statuses active/paused/cancelled;
-  monthly-equivalent cost; "Mark paid" (advances the next payment date by one cycle);
-  overdue and due-soon text.
-* Monthly budget: one per user per month (database unique constraint), set or update.
-* Dashboard: budget, expenses, remaining, utilization %, subscription estimate (separate), recent
-  expenses, upcoming payments (next 30 days, overdue included), month navigation.
-* Responsive layout, empty states, success/error messages.
-* Every query filters by `user_id`, so users can only reach their own records.
+- Registration, login, and logout.
+- Salted PBKDF2-HMAC-SHA256 password hashing.
+- Session-based login, session ID renewal on login, and protected pages.
+- CSRF token validation on POST requests.
+- Expense creation, listing, editing, and deletion; month/category filters; server-side validation.
+- Subscription creation, listing, editing, and deletion; weekly, monthly, and yearly billing cycles; active, paused, and cancelled statuses.
+- Monthly-equivalent subscription cost calculation.
+- “Mark paid” advances the next payment date by one billing cycle; it does **not** automatically create an expense.
+- Monthly budget creation/update, with one budget per user per month.
+- Dashboard showing budget, recorded expenses, remaining budget, utilization, subscription estimate, recent expenses, and upcoming payments.
+- Responsive layout, empty states, and success/error messages.
+- Database queries are scoped by `user_id` to separate each user's records.
 
-## 11. Known limitations (honest list)
+## 11. Known limitations
 
-* **Not tested here against a live Oracle database or a running Tomcat** (see TESTING.md for exactly what
-  was and was not verified). You must run the checklist locally.
-* No connection pool: one JDBC connection per query. Fine for a demo, not for heavy load.
-* Subscriptions never create expenses automatically; "Mark paid" only moves the date.
-* Expense dates cannot be in the future. Fixed category list. Single currency (INR, shown as the rupee sign).
-* No password reset, email, charts, export, pagination, search, admin role, or account deletion.
-* Login has no lockout or rate limiting.
-* The `/health` page is a development aid; remove the servlet before any real deployment.
-* No automated unit tests are packaged; this is an MVP, not production-ready software.
+- Verify the project locally using the checklist and `TESTING.md`; do not assume a clean build or successful deployment unless you have run it.
+- There is no JDBC connection pool; the application opens connections for database operations. This is acceptable for a small demonstration but not ideal for heavy load.
+- Subscriptions do not automatically create expenses; “Mark paid” only advances the next payment date.
+- Expense dates cannot be in the future. Categories use a fixed list, and the application displays INR.
+- No password reset, email notifications, charts, export, pagination, search, admin role, or account deletion.
+- Login has no lockout or rate limiting.
+- `/health` is a development aid and should be removed or protected before production deployment.
+- No automated unit tests are included. This is a minimum viable project, not production-ready software.
 
 ## 12. Future enhancements
 
-Charts, CSV/PDF export, reminders, auto-created expenses from paid subscriptions, categories per user,
-connection pool (Tomcat JNDI), password reset, pagination and search, automated tests.
+Potential improvements include charts, CSV/PDF export, reminders, automatic expense creation when subscriptions are paid, user-defined categories, a Tomcat JNDI connection pool, password reset, pagination/search, and automated tests.
+
+---
+
+## Submission checklist
+
+Before sharing this repository or a ZIP with a reviewer:
+
+- [ ] Confirm the project builds successfully on your machine.
+- [ ] Run the app and verify login, expense CRUD, subscription management, budget calculation, and dashboard.
+- [ ] Check `TESTING.md` so its results accurately distinguish tests actually run from tests not run.
+- [ ] Confirm `db.properties` and all real credentials are excluded.
+- [ ] Include `pom.xml`, `src/`, `sql/`, `README.md`, `TESTING.md`, `PROJECT_EXPLANATION.md`, and `.gitignore`.
+- [ ] Do not include generated build output such as `target/` unless specifically requested.
