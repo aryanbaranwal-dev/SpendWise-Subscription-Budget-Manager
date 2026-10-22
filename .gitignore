@@ -1,0 +1,22 @@
+# Local secrets - NEVER commit or share
+src/main/resources/db.properties
+*.local.properties
+.env
+.env.*
+
+# Build output
+target/
+*.war
+
+# Eclipse / IDE local configuration
+.classpath
+.project
+.settings/
+.metadata/
+Servers/
+.factorypath
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log

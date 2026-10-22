@@ -1,0 +1,28 @@
+# ---------------------------------------------------------------
+# SpendWise database configuration TEMPLATE
+#
+# 1. Copy this file to:  src/main/resources/db.properties
+#    (same folder, new name, no ".template")
+# 2. Replace every YOUR_... value with your own details.
+# 3. db.properties is listed in .gitignore. Never share it.
+# ---------------------------------------------------------------
+
+# Host name or IP of the Oracle server (change if Oracle is not on this PC)
+db.host=localhost
+
+# Listener port (1521 is the Oracle default; confirm with: lsnrctl status)
+db.port=1521
+
+# Oracle SERVICE NAME (not the SID). Example values: XEPDB1, ORCLPDB1, XE
+db.service=YOUR_SERVICE_NAME
+
+# Application schema user (do NOT use SYS or SYSTEM)
+db.username=YOUR_DB_USERNAME
+
+# Password of that user
+db.password=YOUR_DB_PASSWORD
+
+# OPTIONAL: full JDBC URL. If set, it replaces host/port/service above.
+# Use this for a SID-style or TNS-alias connection, e.g.
+#   db.url=jdbc:oracle:thin:@localhost:1521:XE
+# db.url=

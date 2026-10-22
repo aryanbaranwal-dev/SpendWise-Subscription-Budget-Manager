@@ -1,0 +1,37 @@
+<c:set var="ctx" value="${pageContext.request.contextPath}"/>
+<fmt:setLocale value="en_IN"/>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><c:out value="${pageTitle}"/> | SpendWise</title>
+  <link rel="stylesheet" href="${ctx}/css/style.css">
+  <script defer src="${ctx}/js/app.js"></script>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <button type="button" class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false">Menu</button>
+    <span class="brand">SpendWise</span>
+  </header>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand brand-side">SpendWise</div>
+    <nav aria-label="Main">
+      <a href="${ctx}/dashboard" class="${activePage eq 'dashboard' ? 'active' : ''}">Dashboard</a>
+      <a href="${ctx}/expenses" class="${activePage eq 'expenses' ? 'active' : ''}">Expenses</a>
+      <a href="${ctx}/subscriptions" class="${activePage eq 'subscriptions' ? 'active' : ''}">Subscriptions</a>
+      <a href="${ctx}/budget" class="${activePage eq 'budget' ? 'active' : ''}">Budget</a>
+    </nav>
+    <div class="side-user">
+      <div class="side-user-name"><c:out value="${sessionScope.loggedInUser.fullName}"/></div>
+      <div class="side-user-mail"><c:out value="${sessionScope.loggedInUser.email}"/></div>
+      <form method="post" action="${ctx}/logout">
+        <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+        <button type="submit" class="btn btn-ghost-light">Sign out</button>
+      </form>
+    </div>
+  </aside>
+  <main class="content">
+    <c:if test="${not empty flashSuccess}"><div class="alert alert-success" role="status"><c:out value="${flashSuccess}"/></div></c:if>
+    <c:if test="${not empty flashError}"><div class="alert alert-error" role="alert"><c:out value="${flashError}"/></div></c:if>
